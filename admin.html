@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Admin — Cancel Booking</title>
+<title>Admin — Amin Bukhari</title>
 
-<!-- Firebase SDKs (compat) -->
+<!-- SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -15,8 +15,10 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:#111}
 .container{max-width:720px;margin:0 auto;padding:24px}
-.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;justify-content:space-between}
+.nav-left{display:flex;gap:8px;flex-wrap:wrap}
 .nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111;text-decoration:none;font-size:14px}
+.lang-toggle{cursor:pointer;font-size:14px;color:#111;padding:6px 10px;border:1px solid var(--border);border-radius:10px;background:#fff}
 .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 h1{margin:0 0 8px 0;font-size:22px}
 label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
@@ -36,28 +38,33 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
 <body>
   <div class="container">
     <nav class="nav">
-      <a href="index.html">Home</a>
-      <a href="book.html">Book a Day</a>
-      <a href="bookings.html">View Bookings</a>
-      <a href="admin.html"><strong>Admin</strong></a>
+      <div class="nav-left">
+        <a href="index.html" data-en="Home" data-ar="الرئيسية">Home</a>
+        <a href="book.html" data-en="Book a Day" data-ar="حجز يوم">Book a Day</a>
+        <a href="bookings.html" data-en="View Bookings" data-ar="عرض الحجوزات">View Bookings</a>
+        <a href="admin.html" data-en="Admin" data-ar="الإدارة"><strong>Admin</strong></a>
+      </div>
+      <div><button id="langBtn" class="lang-toggle">عربي</button></div>
     </nav>
 
     <!-- Sign-in -->
     <div id="signin-card" class="card">
-      <h1>Admin Sign In</h1>
+      <h1 data-en="Admin Sign In — by Amin Bukhari" data-ar="تسجيل دخول الإدارة — بواسطة أمين بخاري">
+        Admin Sign In — by Amin Bukhari
+      </h1>
       <div class="row">
         <div>
-          <label for="email">Email</label>
+          <label for="email" data-en="Email" data-ar="البريد الإلكتروني">Email</label>
           <input type="email" id="email" placeholder="admin@your-domain.com" />
         </div>
         <div>
-          <label for="password">Password</label>
+          <label for="password" data-en="Password" data-ar="كلمة المرور">Password</label>
           <input type="password" id="password" placeholder="••••••••" />
         </div>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        <button id="signin" class="btn">Sign in</button>
-        <button id="signout" class="btn secondary hidden">Sign out</button>
+        <button id="signin" class="btn" data-en="Sign in" data-ar="تسجيل الدخول">Sign in</button>
+        <button id="signout" class="btn secondary hidden" data-en="Sign out" data-ar="تسجيل الخروج">Sign out</button>
         <small id="auth-status"></small>
       </div>
       <div id="auth-msg" class="alert hidden"></div>
@@ -65,26 +72,44 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
 
     <!-- Admin actions -->
     <div id="admin-card" class="card hidden" style="margin-top:16px">
-      <h1>Cancel (Delete) a Booking</h1>
-      <p>Enter the date to cancel (format <code>YYYY-MM-DD</code>).</p>
+      <h1 data-en="Cancel (Delete) a Booking" data-ar="إلغاء (حذف) حجز">Cancel (Delete) a Booking</h1>
+      <p data-en="Enter the date to cancel (format YYYY-MM-DD)."
+         data-ar="أدخل التاريخ المطلوب حذفه (بصيغة YYYY-MM-DD).">
+         Enter the date to cancel (format YYYY-MM-DD).
+      </p>
       <div class="row">
         <div>
-          <label for="date">Date</label>
+          <label for="date" data-en="Date" data-ar="التاريخ">Date</label>
           <input type="date" id="date" />
         </div>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        <button id="delete" class="btn">Delete booking</button>
-        <small>Only works when signed in as the admin user.</small>
+        <button id="delete" class="btn" data-en="Delete booking" data-ar="حذف الحجز">Delete booking</button>
+        <small data-en="Admin only." data-ar="للمسؤول فقط.">Admin only.</small>
       </div>
       <div id="msg" class="alert hidden"></div>
     </div>
 
-    <footer>© Building Reception Booking • Admin</footer>
+    <footer data-en="© 2025 Reception Room Booking — Amin Bukhari"
+            data-ar="© ٢٠٢٥ حجز قاعة الاستقبال — أمين بخاري">
+            © 2025 Reception Room Booking — Amin Bukhari
+    </footer>
   </div>
 
 <script>
-  // ---- Firebase config (your real values) ----
+  // Language toggle
+  let isArabic = false;
+  const btn = document.getElementById('langBtn');
+  btn.addEventListener('click', ()=>{
+    isArabic = !isArabic;
+    btn.textContent = isArabic ? "English" : "عربي";
+    document.querySelectorAll('[data-en]').forEach(el=>{
+      el.textContent = isArabic ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+    });
+    document.dir = isArabic ? "rtl" : "ltr";
+  });
+
+  // Config (kept hidden from UI)
   const firebaseConfig = {
     apiKey: "AIzaSyBsJoJnj1r2EnfZLVpZauLba5Ei-BmeoKU",
     authDomain: "roombookings-bee0c.firebaseapp.com",
@@ -118,20 +143,20 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
   // Auth state
   auth.onAuthStateChanged(user => {
     if (user) {
-      authStatus.textContent = `Signed in as ${user.email}`;
+      authStatus.textContent = (isArabic ? "تم تسجيل الدخول كـ " : "Signed in as ") + user.email;
       show(signoutBtn); hide(signinBtn); hide(authMsg); show(adminCard);
     } else {
-      authStatus.textContent = 'Not signed in';
+      authStatus.textContent = isArabic ? "غير مسجل الدخول" : "Not signed in";
       show(signinBtn); hide(signoutBtn); hide(adminCard);
     }
   });
 
-  // Sign in / sign out
+  // Sign in / out
   signinBtn.addEventListener('click', async () => {
     hide(authMsg);
     try {
       await auth.signInWithEmailAndPassword(emailEl.value.trim(), passEl.value);
-      setAlert(authMsg, 'Signed in successfully.', 'ok');
+      setAlert(authMsg, isArabic ? "تم تسجيل الدخول بنجاح." : "Signed in successfully.", 'ok');
     } catch (e) {
       setAlert(authMsg, e.message, 'error');
     }
@@ -139,18 +164,18 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
   signoutBtn.addEventListener('click', async () => {
     hide(authMsg);
     await auth.signOut();
-    setAlert(authMsg, 'Signed out.', 'ok');
+    setAlert(authMsg, isArabic ? "تم تسجيل الخروج." : "Signed out.", 'ok');
   });
 
   // Delete booking
   deleteBtn.addEventListener('click', async () => {
     hide(msgEl);
     const date = dateEl.value;
-    if (!date) return setAlert(msgEl, 'Please choose a date to delete.', 'error');
-    if (!confirm(`Delete booking for ${date}? This cannot be undone.`)) return;
+    if (!date) return setAlert(msgEl, isArabic ? "الرجاء اختيار التاريخ للحذف." : "Please choose a date to delete.", 'error');
+    if (!confirm((isArabic ? "حذف الحجز لليوم " : "Delete booking for ") + date + (isArabic ? "؟" : "?"))) return;
     try {
       await db.collection('bookings').doc(date).delete();
-      setAlert(msgEl, `Deleted booking for ${date}.`, 'ok');
+      setAlert(msgEl, (isArabic ? "تم حذف الحجز لليوم " : "Deleted booking for ") + date + ".", 'ok');
     } catch (e) {
       setAlert(msgEl, e.message, 'error');
     }
