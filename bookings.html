@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>All Bookings</title>
+<title>View Bookings — Amin Bukhari</title>
 
-<!-- Firebase SDKs (compat build) -->
+<!-- SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
@@ -14,9 +14,11 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:#111}
 .container{max-width:840px;margin:0 auto;padding:24px}
-.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px;justify-content:space-between}
+.nav-left{display:flex;gap:8px;flex-wrap:wrap}
 .nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111;text-decoration:none;font-size:14px}
 .nav a.brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.lang-toggle{cursor:pointer;font-size:14px;color:#111;padding:6px 10px;border:1px solid var(--border);border-radius:10px;background:#fff}
 .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 h1{font-size:24px;margin:0 0 8px 0}
 .table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:14px}
@@ -34,35 +36,55 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
 <body>
   <div class="container">
     <nav class="nav">
-      <a href="index.html">Home</a>
-      <a href="book.html">Book a Day</a>
-      <a class="brand" href="bookings.html">View Bookings</a>
-      <a href="admin.html">Admin</a>
+      <div class="nav-left">
+        <a href="index.html" data-en="Home" data-ar="الرئيسية">Home</a>
+        <a href="book.html" data-en="Book a Day" data-ar="حجز يوم">Book a Day</a>
+        <a class="brand" href="bookings.html" data-en="View Bookings" data-ar="عرض الحجوزات">View Bookings</a>
+        <a href="admin.html" data-en="Admin" data-ar="الإدارة">Admin</a>
+      </div>
+      <div><button id="langBtn" class="lang-toggle">عربي</button></div>
     </nav>
 
     <div class="card">
-      <h1>All Bookings</h1>
-      <p id="info" class="alert"></p>
+      <h1 data-en="All Bookings — by Amin Bukhari" data-ar="جميع الحجوزات — بواسطة أمين بخاري">All Bookings — by Amin Bukhari</h1>
+      <p id="info" class="alert" data-en="" data-ar=""></p>
       <div style="overflow-x:auto">
         <table class="table">
           <thead>
-            <tr><th>Date</th><th>Apartment</th></tr>
+            <tr>
+              <th data-en="Date" data-ar="التاريخ">Date</th>
+              <th data-en="Apartment" data-ar="رقم الشقة">Apartment</th>
+            </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
       <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
-        <button id="refresh" class="btn secondary">Refresh</button>
+        <button id="refresh" class="btn secondary" data-en="Refresh" data-ar="تحديث">Refresh</button>
         <span id="spinner" class="spinner" style="display:none"></span>
       </div>
-      <small>This shows live bookings from Firebase Firestore.</small>
     </div>
 
-    <footer>© Building Reception Booking</footer>
+    <footer data-en="© 2025 Reception Room Booking — Amin Bukhari"
+            data-ar="© ٢٠٢٥ حجز قاعة الاستقبال — أمين بخاري">
+            © 2025 Reception Room Booking — Amin Bukhari
+    </footer>
   </div>
 
 <script>
-  // ---- Firebase config (your real values) ----
+  // Language toggle
+  let isArabic = false;
+  const btn = document.getElementById('langBtn');
+  btn.addEventListener('click', ()=>{
+    isArabic = !isArabic;
+    btn.textContent = isArabic ? "English" : "عربي";
+    document.querySelectorAll('[data-en]').forEach(el=>{
+      el.textContent = isArabic ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+    });
+    document.dir = isArabic ? "rtl" : "ltr";
+  });
+
+  // Config (hidden from UI)
   const firebaseConfig = {
     apiKey: "AIzaSyBsJoJnj1r2EnfZLVpZauLba5Ei-BmeoKU",
     authDomain: "roombookings-bee0c.firebaseapp.com",
@@ -78,15 +100,13 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
   function formatDatePretty(iso){
     try { const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'}); } catch { return iso; }
   }
-
-  async function apiList(){
+  async function listBookings(){
     const snap = await db.collection("bookings").get();
     const out = [];
-    snap.forEach(doc => out.push(doc.data())); // {date, apt}
+    snap.forEach(doc => out.push(doc.data()));
     return out;
   }
 
-  // UI
   const tbody = document.getElementById('tbody');
   const info = document.getElementById('info');
   const refresh = document.getElementById('refresh');
@@ -97,9 +117,9 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
     info.textContent = '';
     spinner.style.display = 'inline-block';
     try{
-      const rows = await apiList();
+      const rows = await listBookings();
       if(!rows || rows.length === 0){
-        info.textContent = 'No bookings yet.';
+        info.textContent = isArabic ? "لا توجد حجوزات حتى الآن." : "No bookings yet.";
       } else {
         rows.sort((a,b)=> a.date.localeCompare(b.date));
         for(const r of rows){
@@ -109,7 +129,7 @@ footer{margin-top:24px;color:#6b7280;font-size:12px}
         }
       }
     }catch(ex){
-      info.textContent = 'Error loading bookings: ' + ex.message;
+      info.textContent = (isArabic ? "خطأ في التحميل: " : "Error loading bookings: ") + ex.message;
     }finally{
       spinner.style.display = 'none';
     }
