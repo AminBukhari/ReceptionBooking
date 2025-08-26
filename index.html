@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reception Room — Home</title>
+<style>
+:root{--bg:#f6f7f9;--text:#111827;--muted:#6b7280;--brand:#111827;--card:#ffffff;--border:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:var(--text)}
+.container{max-width:840px;margin:0 auto;padding:24px}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--text);text-decoration:none;font-size:14px}
+.nav a.brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+h1{font-size:24px;margin:0 0 8px 0}
+h2{font-size:18px;margin:0 0 12px 0}
+p{color:var(--muted);line-height:1.5}
+.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;border:0;cursor:pointer;font-size:14px;text-decoration:none}
+.btn.secondary{background:#fff;color:#111;border:1px solid #e5e7eb}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:720px){.row{grid-template-columns:1fr}}
+footer{margin-top:24px;color:#6b7280;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="index.html">Home</a>
+      <a href="book.html">Book a Day</a>
+      <a href="bookings.html">View Bookings</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+
+    <div class="card">
+      <h1>Reception Room — Full-Day Booking</h1>
+      <p>This website lets residents reserve the <strong>reception room for a full day</strong>. Each day can have <strong>one booking only</strong>.</p>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <div class="card">
+        <h2>How it works</h2>
+        <ol>
+          <li>Open <em>Book a Day</em>.</li>
+          <li>Enter your <strong>apartment number</strong> and choose the <strong>date</strong>.</li>
+          <li>If the date is free, it’s saved for your apartment.</li>
+        </ol>
+        <p><a class="btn" href="book.html">Book a Day</a></p>
+      </div>
+      <div class="card">
+        <h2>Check availability</h2>
+        <p>See which dates are already taken by other residents.</p>
+        <p><a class="btn secondary" href="bookings.html">View Bookings</a></p>
+      </div>
+    </div>
+
+    <footer>© Building Reception Booking • Firebase Firestore</footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin — Cancel Booking</title>
+
+<!-- Firebase SDKs (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+:root{--bg:#f6f7f9;--text:#111827;--muted:#6b7280;--brand:#111827;--card:#ffffff;--border:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:#111}
+.container{max-width:720px;margin:0 auto;padding:24px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111;text-decoration:none;font-size:14px}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+h1{margin:0 0 8px 0;font-size:22px}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+input[type="email"],input[type="password"],input[type="date"]{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:680px){.row{grid-template-columns:1fr}}
+.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;border:0;cursor:pointer;font-size:14px;text-decoration:none}
+.btn.secondary{background:#fff;color:#111;border:1px solid #e5e7eb}
+.alert{padding:10px 12px;border-radius:12px;margin-top:8px}
+.alert.error{background:#fee2e2;color:#991b1b}
+.alert.ok{background:#dcfce7;color:#14532d}
+small{color:#6b7280}
+footer{margin-top:24px;color:#6b7280;font-size:12px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="book.html">Book a Day</a>
+      <a href="bookings.html">View Bookings</a>
+      <a href="admin.html"><strong>Admin</strong></a>
+    </nav>
+
+    <!-- Sign-in -->
+    <div id="signin-card" class="card">
+      <h1>Admin Sign In</h1>
+      <div class="row">
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="admin@your-domain.com" />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button id="signin" class="btn">Sign in</button>
+        <button id="signout" class="btn secondary hidden">Sign out</button>
+        <small id="auth-status"></small>
+      </div>
+      <div id="auth-msg" class="alert hidden"></div>
+    </div>
+
+    <!-- Admin actions -->
+    <div id="admin-card" class="card hidden" style="margin-top:16px">
+      <h1>Cancel (Delete) a Booking</h1>
+      <p>Enter the date to cancel (format <code>YYYY-MM-DD</code>).</p>
+      <div class="row">
+        <div>
+          <label for="date">Date</label>
+          <input type="date" id="date" />
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button id="delete" class="btn">Delete booking</button>
+        <small>Only works when signed in as the admin user.</small>
+      </div>
+      <div id="msg" class="alert hidden"></div>
+    </div>
+
+    <footer>© Building Reception Booking • Admin</footer>
+  </div>
+
+<script>
+  // ---- Firebase config (your real values) ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsJoJnj1r2EnfZLVpZauLba5Ei-BmeoKU",
+    authDomain: "roombookings-bee0c.firebaseapp.com",
+    projectId: "roombookings-bee0c",
+    storageBucket: "roombookings-bee0c.firebasestorage.app",
+    messagingSenderId: "604726620304",
+    appId: "1:604726620304:web:695a896a75df0cf7bba815",
+    measurementId: "G-P8070XN3K9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // UI helpers
+  const signinCard = document.getElementById('signin-card');
+  const adminCard  = document.getElementById('admin-card');
+  const emailEl = document.getElementById('email');
+  const passEl  = document.getElementById('password');
+  const signinBtn = document.getElementById('signin');
+  const signoutBtn = document.getElementById('signout');
+  const authStatus = document.getElementById('auth-status');
+  const authMsg = document.getElementById('auth-msg');
+  const dateEl = document.getElementById('date');
+  const deleteBtn = document.getElementById('delete');
+  const msgEl = document.getElementById('msg');
+
+  function show(el){ el.classList.remove('hidden'); }
+  function hide(el){ el.classList.add('hidden'); }
+  function setAlert(el, text, type){ el.textContent = text; el.className = 'alert ' + type; show(el); }
+
+  // Auth state
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      authStatus.textContent = `Signed in as ${user.email}`;
+      show(signoutBtn); hide(signinBtn); hide(authMsg); show(adminCard);
+    } else {
+      authStatus.textContent = 'Not signed in';
+      show(signinBtn); hide(signoutBtn); hide(adminCard);
+    }
+  });
+
+  // Sign in / sign out
+  signinBtn.addEventListener('click', async () => {
+    hide(authMsg);
+    try {
+      await auth.signInWithEmailAndPassword(emailEl.value.trim(), passEl.value);
+      setAlert(authMsg, 'Signed in successfully.', 'ok');
+    } catch (e) {
+      setAlert(authMsg, e.message, 'error');
+    }
+  });
+  signoutBtn.addEventListener('click', async () => {
+    hide(authMsg);
+    await auth.signOut();
+    setAlert(authMsg, 'Signed out.', 'ok');
+  });
+
+  // Delete booking
+  deleteBtn.addEventListener('click', async () => {
+    hide(msgEl);
+    const date = dateEl.value;
+    if (!date) return setAlert(msgEl, 'Please choose a date to delete.', 'error');
+    if (!confirm(`Delete booking for ${date}? This cannot be undone.`)) return;
+    try {
+      await db.collection('bookings').doc(date).delete();
+      setAlert(msgEl, `Deleted booking for ${date}.`, 'ok');
+    } catch (e) {
+      setAlert(msgEl, e.message, 'error');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book a Day</title>
+
+<!-- Firebase SDKs (compat build) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+:root{--bg:#f6f7f9;--text:#111827;--muted:#6b7280;--brand:#111827;--card:#ffffff;--border:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:var(--text)}
+.container{max-width:840px;margin:0 auto;padding:24px}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111;text-decoration:none;font-size:14px}
+.nav a.brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+h1{font-size:24px;margin:0 0 8px 0}
+label{font-size:14px;font-weight:600;margin-bottom:6px;display:block}
+input[type="text"],input[type="date"]{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:720px){.row{grid-template-columns:1fr}}
+.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;border:0;cursor:pointer;font-size:14px;text-decoration:none}
+.alert{padding:10px 12px;border-radius:12px;margin-top:8px}
+.alert.error{background:#fee2e2;color:#991b1b}
+.alert.ok{background:#dcfce7;color:#14532d}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#111827;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{margin-top:24px;color:#6b7280;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a class="brand" href="book.html">Book a Day</a>
+      <a href="bookings.html">View Bookings</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+
+    <div class="card">
+      <h1>Book the Reception Room (Full Day)</h1>
+      <form id="book-form" class="row">
+        <div>
+          <label for="apt">Apartment / Unit</label>
+          <input type="text" id="apt" placeholder="e.g., A-1203" required />
+        </div>
+        <div>
+          <label for="date">Date</label>
+          <input type="date" id="date" required />
+        </div>
+        <div>
+          <button type="submit" class="btn">
+            Book Day <span id="spinner" class="spinner" style="display:none"></span>
+          </button>
+        </div>
+      </form>
+      <div id="err" class="alert" role="alert" style="display:none"></div>
+      <div id="ok" class="alert" role="status" style="display:none"></div>
+      <small>Bookings save to a shared Firebase Firestore database.</small>
+    </div>
+
+    <footer>© Building Reception Booking</footer>
+  </div>
+
+<script>
+  // ---- Firebase config (your real values) ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsJoJnj1r2EnfZLVpZauLba5Ei-BmeoKU",
+    authDomain: "roombookings-bee0c.firebaseapp.com",
+    projectId: "roombookings-bee0c",
+    storageBucket: "roombookings-bee0c.firebasestorage.app",
+    messagingSenderId: "604726620304",
+    appId: "1:604726620304:web:695a896a75df0cf7bba815",
+    measurementId: "G-P8070XN3K9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function show(el){ el.style.display='block'; }
+  function hide(el){ el.style.display='none'; }
+  function formatDatePretty(iso){
+    try { const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'}); } catch { return iso; }
+  }
+
+  async function apiBook(date, apt){
+    const ref = db.collection("bookings").doc(date); // doc id = date (enforce one/day)
+    const snap = await ref.get();
+    if (snap.exists) {
+      const data = snap.data();
+      throw new Error(`Sorry, ${date} is already booked by ${data.apt}.`);
+    }
+    await ref.set({ date, apt });
+    return { ok: true };
+  }
+
+  // UI
+  const form = document.getElementById('book-form');
+  const apt = document.getElementById('apt');
+  const date = document.getElementById('date');
+  const ok = document.getElementById('ok');
+  const err = document.getElementById('err');
+  const spinner = document.getElementById('spinner');
+
+  date.min = todayISO();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hide(ok); hide(err);
+    spinner.style.display = 'inline-block';
+
+    const aptVal = apt.value.trim();
+    const dateVal = date.value;
+    if(!aptVal){ err.textContent='Please enter your apartment number.'; show(err); spinner.style.display='none'; return; }
+    if(!dateVal){ err.textContent='Please choose a date.'; show(err); spinner.style.display='none'; return; }
+
+    try{
+      await apiBook(dateVal, aptVal);
+      ok.textContent = 'Booked ' + formatDatePretty(dateVal) + ' for apartment ' + aptVal + '.';
+      show(ok);
+      form.reset();
+      date.min = todayISO();
+    }catch(ex){
+      err.textContent = ex.message || 'Could not complete booking.';
+      show(err);
+    }finally{
+      spinner.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>

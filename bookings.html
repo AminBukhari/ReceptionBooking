@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>All Bookings</title>
+
+<!-- Firebase SDKs (compat build) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+:root{--bg:#f6f7f9;--text:#111827;--muted:#6b7280;--brand:#111827;--card:#ffffff;--border:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;background:var(--bg);color:#111}
+.container{max-width:840px;margin:0 auto;padding:24px}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.nav a{padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111;text-decoration:none;font-size:14px}
+.nav a.brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+h1{font-size:24px;margin:0 0 8px 0}
+.table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:14px}
+th,td{padding:10px 12px;background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+td:first-child,th:first-child{border-left:1px solid var(--border);border-top-left-radius:12px;border-bottom-left-radius:12px}
+td:last-child,th:last-child{border-right:1px solid var(--border);border-top-right-radius:12px;border-bottom-right-radius:12px}
+.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;border:0;cursor:pointer;font-size:14px;text-decoration:none}
+.btn.secondary{background:#fff;color:#111;border:1px solid #e5e7eb}
+.alert{padding:10px 12px;border-radius:12px;margin-top:8px;color:#6b7280}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#111827;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{margin-top:24px;color:#6b7280;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="book.html">Book a Day</a>
+      <a class="brand" href="bookings.html">View Bookings</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+
+    <div class="card">
+      <h1>All Bookings</h1>
+      <p id="info" class="alert"></p>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr><th>Date</th><th>Apartment</th></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+        <button id="refresh" class="btn secondary">Refresh</button>
+        <span id="spinner" class="spinner" style="display:none"></span>
+      </div>
+      <small>This shows live bookings from Firebase Firestore.</small>
+    </div>
+
+    <footer>© Building Reception Booking</footer>
+  </div>
+
+<script>
+  // ---- Firebase config (your real values) ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsJoJnj1r2EnfZLVpZauLba5Ei-BmeoKU",
+    authDomain: "roombookings-bee0c.firebaseapp.com",
+    projectId: "roombookings-bee0c",
+    storageBucket: "roombookings-bee0c.firebasestorage.app",
+    messagingSenderId: "604726620304",
+    appId: "1:604726620304:web:695a896a75df0cf7bba815",
+    measurementId: "G-P8070XN3K9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function formatDatePretty(iso){
+    try { const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'}); } catch { return iso; }
+  }
+
+  async function apiList(){
+    const snap = await db.collection("bookings").get();
+    const out = [];
+    snap.forEach(doc => out.push(doc.data())); // {date, apt}
+    return out;
+  }
+
+  // UI
+  const tbody = document.getElementById('tbody');
+  const info = document.getElementById('info');
+  const refresh = document.getElementById('refresh');
+  const spinner = document.getElementById('spinner');
+
+  async function render(){
+    tbody.innerHTML = '';
+    info.textContent = '';
+    spinner.style.display = 'inline-block';
+    try{
+      const rows = await apiList();
+      if(!rows || rows.length === 0){
+        info.textContent = 'No bookings yet.';
+      } else {
+        rows.sort((a,b)=> a.date.localeCompare(b.date));
+        for(const r of rows){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${formatDatePretty(r.date)}</td><td>${r.apt}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+    }catch(ex){
+      info.textContent = 'Error loading bookings: ' + ex.message;
+    }finally{
+      spinner.style.display = 'none';
+    }
+  }
+  refresh.addEventListener('click', render);
+  render();
+</script>
+</body>
+</html>
